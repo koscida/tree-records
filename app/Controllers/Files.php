@@ -10,18 +10,48 @@ class Files extends BaseController
 {
     public function index(): string
     {
-		$model = model(FilesModel::class);
+		$fileModel = model(FilesModel::class);
 		
+		// Build page data
 		$data = [
 			'title'		=> "Files",
-			'files'		=> $model->getFiles(),
+			'files'		=> $fileModel->getFiles(),
 		];
 		
         return view('files/index', $data);
     }
 	
+	public function get($id) {
+		$fileModel = model(FilesModel::class);
+		$fileRowsModel = model(FileRowsModel::class);
+		
+		// Get one file
+		$file = $fileModel->getFile($id);
+		
+		// Check if file exists
+		if ($file === null) {
+			// Redirect back to files list
+			return redirect()->to('files/');
+        }
+		
+		// Extract data
+		$id = $file['id'];
+		
+		// Get any rows
+		$fileRows = $fileRowsModel->getRows(["fileId" => $id]);
+		
+		// Build page data
+		$data = [
+			'title'		=> "File (ID ".$id.")",
+			'file'		=> $file,
+			'fileRows'	=> $fileRows
+		];
+		return view('files/get', $data);
+	}
+	
 	public function new(): string 
 	{
+		// Build page data
 		$data = [
 			'title'		=> "Upload File",
 		];
@@ -31,6 +61,7 @@ class Files extends BaseController
 	
 	public function upload()
     {
+		// Build page data
 		$data = [];
 		
 		$file = $this->request->getFile('csv_file');
@@ -50,6 +81,7 @@ class Files extends BaseController
             $data['errors'][] = $this->validator->getErrors();
 			$data['errors'][] = $file;
 
+			// Error, return the same view but with errors
             return view('/files/new', $data);
         }
 		
@@ -57,30 +89,33 @@ class Files extends BaseController
 		$originalName = $file->getClientName();
 
         if (! $file->hasMoved()) {
-            $filepath = WRITEPATH . 'uploads/' . $file->store("records", $originalName);
+            $filepath = 'uploads/' . $file->store("records", $originalName);
+			$writepath = WRITEPATH . $filepath;
 			
 			$fileModel = new FilesModel();
 			
 			// Add a new file
 			$fileData = [
-				'filePath' => $filepath,
-				'fileName' => $filename,
+				'filepath' => $filepath,
+				'filename' => $filename,
 				'originalName' => $originalName,
 				'headerRows' => 1,
 			];
 			$id = $fileModel->insert($fileData);
 			
 			$data = [
-				'file' => new File($filepath),
+				'file' => new File($writepath),
 			];
 
-            return redirect()->to('fileRows/bulkNew/'.$id);
+			// Success, redirect to the file page
+            return redirect()->to('files/'.$id);
         }
 
         $data = [
 			'errors' => 'The file has already been moved.'
 		];
 
+		// Error, return the same view but with errors
         return view('/files/new', $data);
 	}
 	
@@ -116,79 +151,4 @@ class Files extends BaseController
 				'message' => 'Unable to delete file.'
 			]);
 	}
-	
-	
-	
-	public function upload_old1()
-    {
-        $file = $this->request->getFile('csv_file');
-		
-		log_message('debug', "");
-
-        // Validate uploaded file
-        if (!$file) {
-            return redirect()->back()
-                ->with('error', 'Please upload a CSV file.');
-        }
-		if (!$file->isValid()) {
-            return redirect()->back()
-                ->with('error', 'Please upload a valid CSV file.');
-        }
-        if ($file->getExtension() !== 'csv') {
-            return redirect()->back()
-                ->with('error', 'Only CSV files are allowed.');
-        }
-
-        // Open CSV file
-        $handle = fopen($file->getTempName(), 'r');
-
-        if (!$handle) {
-            return redirect()->back()
-                ->with('error', 'Unable to read CSV file.');
-        }
-
-        $fileModel = new FilesModel();
-		$fileRowModel = new FileRowsModel();
-		
-		$filename = $file->getFilename();
-		
-		// Add a new file
-		$fileData = [
-			'filePath' => $file->getTempName(),
-			'fileName' => $filename,
-			'headerRows' => 1,
-		];
-		$fileModel->insert($fileData);
-		
-		$file->move(WRITEPATH . 'uploads', $filename);
-
-        // // Skip header row
-        // fgetcsv($handle);
-
-        // $imported = 0;
-
-        // // Read each CSV row
-        // while (($row = fgetcsv($handle)) !== false) {
-
-        //     if (count($row) < 4) {
-        //         continue;
-        //     }
-
-        //     $rowData = [
-        //         'first_name' => trim($row[0]),
-        //         'last_name'  => trim($row[1]),
-        //         'email'      => trim($row[2]),
-        //         'phone'      => trim($row[3])
-        //     ];
-
-        //     $fileRowModel->insert($rowData);
-
-        //     $imported++;
-        // }
-
-        fclose($handle);
-
-        return redirect()->to('/files/new')
-            ->with('success', "file imported successfully.");
-    }
 }

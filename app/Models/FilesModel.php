@@ -11,8 +11,8 @@ class FilesModel extends Model
 	protected $primaryKey = 'id';
 
     protected $allowedFields = [
-        'fileName',
-        'filePath',
+        'filename',
+        'filepath',
 		'originalName'
     ];
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * File Home Page
+ * Filse Home Page
  */
 
 // Use default layout
@@ -20,25 +20,31 @@ $this->section('content');
 				<th>Original Name</th>
 				<th>Created At</th>
 				<th>Updated At</th>
+				<th></th>
 			</tr>
 			<?php foreach ($files as $file) { 
+				$fileId = $file['id'];
+				
 				// try to get the file
 				$deleted = false;
 				if(file_exists($file['filePath'])) {
 					$deleted = true;
 				}
+				
 				?>
-				<tr id="file-row-<?= $file['id'] ?>">
-					<td><?= esc($file['id']) ?></td>
-					<td><?= esc($file['fileName']) ?></td>
-					<td><?= esc($file['filePath']) ?></td>
+				<tr id="file-row-<?= $fileId ?>">
+					<td><?= esc($fileId) ?></td>
+					<td><?= esc($file['filename']) ?></td>
+					<td><?= esc($file['filepath']) ?></td>
 					<td><?= esc($file['originalName']) ?></td>
 					<td><?= esc($file['createdAt']) ?></td>
 					<td><?= esc($file['updatedAt']) ?></td>
 					<td>
 						<div class="btn-group btn-group-sm" role="group" aria-label="Basic mixed styles example">
 							<?php if ($deleted): ?>
-								<button type="button" class="btn btn-danger deleteFile" data-id="<?= $file['id'] ?>">Delete</button>
+								<button type="button" class="btn btn-danger deleteFile" data-id="<?= $fileId ?>">Delete</button>
+							<?php else: ?>
+								<a href="<?= base_url('files/'.$fileId) ?>" class="btn btn-primary" data-id="<?= $fileId ?>">Open</a>
 							<?php endif; ?>
 						</div>
 					</td>
